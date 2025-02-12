@@ -275,10 +275,20 @@ Remember that it is at this level that we establish the hierarchy of how our pai
 Let's extract it by comparing everything to everything else.
 ```{r interaction means all}
 rcbd_means_all <- emmeans(rcbd_mod, 
-                          ~nrate_kgha:krate_kgha)
+                          ~krate_kgha|nrate_kgha)
+#originally is nrate...:krate..., but for the final plot it was change to krate..|nrate...
 #expected marginal means = emmeans
 rcbd_means_all
 
+#k inside n
+rcbd_means_kn <-emmeans(rcbd_mod,
+                        ~krate_kgha|nrate_kgha)
+rcbd_means_kn
+
+#n inside k
+rcbd_means_nk <- emmeans(rcbd_mod,
+                         ~nrate_kgha|krate_kgha)
+rcbd_means_nk
 
 ```
 
@@ -294,6 +304,18 @@ rcbd_cld_all <- cld(rcbd_means_all,
 #fisher lsd means they did not use an adjustment, they decided how to break their comparison based on the anova table.
 #adjustment is a way to say i have the certainty about a level or trt. 
 rcbd_cld_all
+
+rcbd_cld_kn <-cld(rcbd_means_kn,
+                  reversed=T,
+                  adjust="none",
+                  Letter=letters)
+rcbd_cld_kn
+
+rcbd_cld_nk <-cld(rcbd_means_nk,
+                  reversed=T,
+                  adjust="none",
+                  Letters=letters)
+rcbd_cld_nk
 
 ```
 
@@ -316,25 +338,33 @@ Let's make this plot publication ready.
 #going to add two datas, the raw and the other one with the comparison
 ggplot() +
   geom_boxplot(data=rcbd_dfw,
-               aes(x = trtname,
+               aes(x = krate_kgha,
                    y = yield_kgha,
-                   color = trtname) #you can also use fill, but fill will colored the inside of the plot
+                   fill = trtname) #you can also use fill, but fill will colored the inside of the plot
                ) +
   geom_jitter(data = rcbd_dfw,
-              aes(x = trtname,
-              y = yield_kgha),
-              alpha = 0.6
+              aes(x = krate_kgha, y = yield_kgha,
+                  color = trtname),
+              alpha = .6
               ) +
-  geom_text(data = rcbd_cld_selected,
-            aes(x = trtname,
+  geom_label(data = rcbd_cld_selected,
+            aes(x = krate_kgha,
                 y = emmean,
-                label = letter)) +
+                label = letter,
+                ),
+            size = 3,
+            label.padding = unit(.3, "lines")
+            ) +
   labs (x = "N rate + K rate (kg/ha)",
         y = "Yield (kg/ha)"
         ) +
-  scale_fill_viridis_d()
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  facet_grid(.~nrate_kgha) +
   #scale_color_manual(c("red","blue"))
   theme(legend.position = "none")
 
-ggsave("../output/rcbd_means.png")
+ggsave("../output/rcbd_means.png",
+       height=4,
+       width=6)
 ```
